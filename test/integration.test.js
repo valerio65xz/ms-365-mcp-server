@@ -10,7 +10,7 @@ describe('Integration Tests', () => {
     expect(packageJson).toHaveProperty('name', 'ms-365-mcp-server');
     expect(packageJson).toHaveProperty('type', 'module');
     expect(packageJson).toHaveProperty('bin.ms-365-mcp-server');
-    expect(packageJson.bin['ms-365-mcp-server']).toEqual('./index.mjs');
+    expect(packageJson.bin['ms-365-mcp-server']).toEqual('index.mjs');
   });
 
   it('should have all required dependencies', () => {
