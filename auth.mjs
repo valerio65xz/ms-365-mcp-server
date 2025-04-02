@@ -3,6 +3,7 @@ import keytar from 'keytar';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
+import logger from './logger.mjs';
 
 const SERVICE_NAME = 'ms-365-mcp-server';
 const TOKEN_CACHE_ACCOUNT = 'msal-token-cache';
@@ -45,9 +46,7 @@ class AuthManager {
           cacheData = cachedData;
         }
       } catch (keytarError) {
-        process.stderr.write(
-          `Keychain access failed, falling back to file storage: ${keytarError.message}\n`
-        );
+        logger.warn(`Keychain access failed, falling back to file storage: ${keytarError.message}`);
       }
 
       if (!cacheData && fs.existsSync(FALLBACK_PATH)) {
@@ -58,7 +57,7 @@ class AuthManager {
         this.msalApp.getTokenCache().deserialize(cacheData);
       }
     } catch (error) {
-      process.stderr.write(`Error loading token cache: ${error.message}\n`);
+      logger.error(`Error loading token cache: ${error.message}`);
     }
   }
 
@@ -69,14 +68,12 @@ class AuthManager {
       try {
         await keytar.setPassword(SERVICE_NAME, TOKEN_CACHE_ACCOUNT, cacheData);
       } catch (keytarError) {
-        process.stderr.write(
-          `Keychain save failed, falling back to file storage: ${keytarError.message}\n`
-        );
+        logger.warn(`Keychain save failed, falling back to file storage: ${keytarError.message}`);
 
         fs.writeFileSync(FALLBACK_PATH, cacheData);
       }
     } catch (error) {
-      process.stderr.write(`Error saving token cache: ${error.message}\n`);
+      logger.error(`Error saving token cache: ${error.message}`);
     }
   }
 
@@ -100,13 +97,13 @@ class AuthManager {
           this.tokenExpiry = new Date(response.expiresOn).getTime();
           return this.accessToken;
         } catch (error) {
-          process.stderr.write('Silent token acquisition failed, using device code flow\n');
+          logger.info('Silent token acquisition failed, using device code flow');
         }
       }
 
       return await this.acquireTokenByDeviceCode();
     } catch (error) {
-      process.stderr.write(`Error getting token: ${error.message}\n`);
+      logger.error(`Error getting token: ${error.message}`);
       throw error;
     }
   }
@@ -115,7 +112,9 @@ class AuthManager {
     const deviceCodeRequest = {
       scopes: this.scopes,
       deviceCodeCallback: (response) => {
-        process.stderr.write('\n' + response.message + '\n');
+        // We need to show this message to the user in console
+        console.log('\n' + response.message + '\n');
+        logger.info('Device code login initiated');
       },
     };
 
@@ -126,7 +125,7 @@ class AuthManager {
       await this.saveTokenCache();
       return this.accessToken;
     } catch (error) {
-      process.stderr.write(`Error in device code flow: ${error.message}\n`);
+      logger.error(`Error in device code flow: ${error.message}`);
       throw error;
     }
   }
@@ -143,7 +142,7 @@ class AuthManager {
       try {
         await keytar.deletePassword(SERVICE_NAME, TOKEN_CACHE_ACCOUNT);
       } catch (keytarError) {
-        process.stderr.write(`Keychain deletion failed: ${keytarError.message}\n`);
+        logger.warn(`Keychain deletion failed: ${keytarError.message}`);
       }
 
       if (fs.existsSync(FALLBACK_PATH)) {
@@ -152,7 +151,7 @@ class AuthManager {
 
       return true;
     } catch (error) {
-      process.stderr.write(`Error during logout: ${error.message}\n`);
+      logger.error(`Error during logout: ${error.message}`);
       throw error;
     }
   }

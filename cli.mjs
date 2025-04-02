@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import AuthManager from './auth.mjs';
 import { readFileSync } from 'fs';
+import logger from './logger.mjs';
 
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
 const version = packageJson.version;
@@ -26,23 +27,23 @@ export async function handleAuth(args) {
 
   if (args.logout) {
     await auth.logout();
-    process.stderr.write('Logged out successfully\n');
+    logger.info('Logged out successfully');
     process.exit(0);
   }
 
   if (args.login) {
-    process.stderr.write('Forcing login with device code...\n');
+    logger.info('Forcing login with device code...');
     await auth.getToken(true);
     if (!args.silent) {
-      process.stderr.write('Logged in, have a nice day lol\n');
+      logger.info('Logged in successfully');
     }
   } else {
     if (!args.silent) {
-      process.stderr.write('Authenticating...\n');
+      logger.info('Authenticating...');
     }
     await auth.getToken();
     if (!args.silent) {
-      process.stderr.write('Logged in, have a nice day lol\n');
+      logger.info('Logged in successfully');
     }
   }
 

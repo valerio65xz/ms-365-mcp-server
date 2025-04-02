@@ -5,6 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { parseArgs, handleAuth } from './cli.mjs';
 import { readFileSync } from 'fs';
+import logger from './logger.mjs';
 
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
 export const version = packageJson.version;
@@ -18,7 +19,7 @@ let sessionId = null;
 
 async function createSession() {
   try {
-    process.stderr.write('Creating new Excel session...\n');
+    logger.info('Creating new Excel session...');
     const accessToken = await authManager.getToken();
 
     const response = await fetch(
@@ -35,16 +36,16 @@ async function createSession() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      process.stderr.write(`Failed to create session: ${response.status} - ${errorText}\n`);
+      logger.error(`Failed to create session: ${response.status} - ${errorText}`);
       return null;
     }
 
     const result = await response.json();
-    process.stderr.write('Session created successfully\n');
+    logger.info('Session created successfully');
     sessionId = result.id;
     return sessionId;
   } catch (error) {
-    process.stderr.write(`Error creating Excel session: ${error}\n`);
+    logger.error(`Error creating Excel session: ${error}`);
     return null;
   }
 }
@@ -69,7 +70,7 @@ async function graphRequest(endpoint, options = {}) {
     );
 
     if (response.status === 401) {
-      process.stderr.write('Access token expired, refreshing...\n');
+      logger.info('Access token expired, refreshing...');
       const newToken = await authManager.getToken(true);
       await createSession();
 
@@ -99,7 +100,7 @@ async function graphRequest(endpoint, options = {}) {
 
     return formatResponse(response);
   } catch (error) {
-    process.stderr.write(`Error in Graph API request: ${error}\n`);
+    logger.error(`Error in Graph API request: ${error}`);
     return {
       content: [{ type: 'text', text: JSON.stringify({ error: error.message }) }],
     };
@@ -430,7 +431,7 @@ server.tool('close-session', {}, async () => {
       throw new Error(`Failed to close session: ${response.status}`);
     }
   } catch (error) {
-    process.stderr.write(`Error closing session: ${error}\n`);
+    logger.error(`Error closing session: ${error}`);
     return {
       content: [
         {
@@ -469,7 +470,7 @@ server.tool(
 
 async function main() {
   try {
-    process.stderr.write('Microsoft 365 MCP Server starting...\n');
+    logger.info('Microsoft 365 MCP Server starting...');
     authManager = await handleAuth(args);
 
     await createSession();
@@ -477,7 +478,7 @@ async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
   } catch (error) {
-    process.stderr.write(`Startup error: ${error}\n`);
+    logger.error(`Startup error: ${error}`);
     process.exit(1);
   }
 }
