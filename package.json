@@ -1,6 +1,6 @@
 {
   "name": "ms-365-mcp-server",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Microsoft 365 MCP Server",
   "type": "module",
   "main": "index.mjs",
@@ -26,6 +26,7 @@
     "@modelcontextprotocol/sdk": "^1.8.0",
     "commander": "^11.1.0",
     "keytar": "^7.9.0",
+    "winston": "^3.17.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

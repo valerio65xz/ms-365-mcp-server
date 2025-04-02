@@ -136,3 +136,6 @@ dist
 .pnp.*
 
 .idea
+
+# Token cache files
+.token-cache.json

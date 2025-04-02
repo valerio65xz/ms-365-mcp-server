@@ -1,5 +1,4 @@
 import { Command } from 'commander';
-import AuthManager from './auth.mjs';
 import { readFileSync } from 'fs';
 
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
@@ -11,40 +10,12 @@ program
   .name('ms-365-mcp-server')
   .description('Microsoft 365 MCP Server')
   .version(version)
-  .option('--login', 'Force login using device code flow')
+  .option('-v', 'Enable verbose logging')
+  .option('--login', 'Login using device code flow')
   .option('--logout', 'Log out and clear saved credentials')
-  .option('--file <path>', 'Excel file path to use (default: /Livet.xlsx)')
-  .option('--silent', 'Run without informational messages to stderr');
+  .option('--test-login', 'Test login without starting the server');
 
 export function parseArgs() {
   program.parse();
   return program.opts();
-}
-
-export async function handleAuth(args) {
-  const auth = new AuthManager();
-
-  if (args.logout) {
-    await auth.logout();
-    process.stderr.write('Logged out successfully\n');
-    process.exit(0);
-  }
-
-  if (args.login) {
-    process.stderr.write('Forcing login with device code...\n');
-    await auth.getToken(true);
-    if (!args.silent) {
-      process.stderr.write('Logged in, have a nice day lol\n');
-    }
-  } else {
-    if (!args.silent) {
-      process.stderr.write('Authenticating...\n');
-    }
-    await auth.getToken();
-    if (!args.silent) {
-      process.stderr.write('Logged in, have a nice day lol\n');
-    }
-  }
-
-  return auth;
 }

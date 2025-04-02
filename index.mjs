@@ -3,8 +3,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { parseArgs, handleAuth } from './cli.mjs';
+import { parseArgs } from './cli.mjs';
 import { readFileSync } from 'fs';
+import logger, { enableConsoleLogging } from './logger.mjs';
+import AuthManager from './auth.mjs';
 
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
 export const version = packageJson.version;
@@ -12,13 +14,14 @@ export const version = packageJson.version;
 const args = parseArgs();
 const filePath = args.file || '/Livet.xlsx';
 
-let authManager;
+const authManager = new AuthManager();
+await authManager.loadTokenCache();
 
 let sessionId = null;
 
 async function createSession() {
   try {
-    process.stderr.write('Creating new Excel session...\n');
+    logger.info('Creating new Excel session...');
     const accessToken = await authManager.getToken();
 
     const response = await fetch(
@@ -35,23 +38,23 @@ async function createSession() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      process.stderr.write(`Failed to create session: ${response.status} - ${errorText}\n`);
+      logger.error(`Failed to create session: ${response.status} - ${errorText}`);
       return null;
     }
 
     const result = await response.json();
-    process.stderr.write('Session created successfully\n');
+    logger.info('Session created successfully');
     sessionId = result.id;
     return sessionId;
   } catch (error) {
-    process.stderr.write(`Error creating Excel session: ${error}\n`);
+    logger.error(`Error creating Excel session: ${error}`);
     return null;
   }
 }
 
 async function graphRequest(endpoint, options = {}) {
   try {
-    const accessToken = await authManager.getToken();
+    let accessToken = await authManager.getToken();
 
     const headers = {
       Authorization: `Bearer ${accessToken}`,
@@ -69,7 +72,7 @@ async function graphRequest(endpoint, options = {}) {
     );
 
     if (response.status === 401) {
-      process.stderr.write('Access token expired, refreshing...\n');
+      logger.info('Access token expired, refreshing...');
       const newToken = await authManager.getToken(true);
       await createSession();
 
@@ -99,7 +102,7 @@ async function graphRequest(endpoint, options = {}) {
 
     return formatResponse(response);
   } catch (error) {
-    process.stderr.write(`Error in Graph API request: ${error}\n`);
+    logger.error(`Error in Graph API request: ${error}`);
     return {
       content: [{ type: 'text', text: JSON.stringify({ error: error.message }) }],
     };
@@ -430,7 +433,7 @@ server.tool('close-session', {}, async () => {
       throw new Error(`Failed to close session: ${response.status}`);
     }
   } catch (error) {
-    process.stderr.write(`Error closing session: ${error}\n`);
+    logger.error(`Error closing session: ${error}`);
     return {
       content: [
         {
@@ -469,15 +472,45 @@ server.tool(
 
 async function main() {
   try {
-    process.stderr.write('Microsoft 365 MCP Server starting...\n');
-    authManager = await handleAuth(args);
+    if (args.v) {
+      enableConsoleLogging();
+    }
+
+    logger.info('Microsoft 365 MCP Server starting...');
+
+    if (args.login) {
+      await authManager.acquireTokenByDeviceCode();
+      logger.info('Login completed, proceeding with session creation');
+      process.exit();
+    }
+
+    if (args.testLogin) {
+      try {
+        logger.info('Testing login...');
+        const token = await authManager.getToken();
+        if (token) {
+          logger.info('Login test successful');
+
+          console.log(JSON.stringify({ success: true, message: 'Login successful' }));
+        } else {
+          logger.error('Login test failed - no token received');
+          console.log(
+            JSON.stringify({ success: false, message: 'Login failed - no token received' })
+          );
+        }
+      } catch (error) {
+        logger.error(`Login test failed: ${error.message}`);
+        console.log(JSON.stringify({ success: false, message: `Login failed: ${error.message}` }));
+      }
+      process.exit(0);
+    }
 
     await createSession();
 
     const transport = new StdioServerTransport();
     await server.connect(transport);
   } catch (error) {
-    process.stderr.write(`Startup error: ${error}\n`);
+    logger.error(`Startup error: ${error}`);
     process.exit(1);
   }
 }
