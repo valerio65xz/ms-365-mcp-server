@@ -1,11 +1,11 @@
 {
   "name": "ms-365-mcp-server",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Microsoft 365 MCP Server",
   "type": "module",
   "main": "index.mjs",
   "bin": {
-    "ms-365-mcp-server": "./index.mjs"
+    "ms-365-mcp-server": "index.mjs"
   },
   "scripts": {
     "test": "vitest run",
