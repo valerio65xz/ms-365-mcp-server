@@ -6,7 +6,7 @@ vi.mock('@modelcontextprotocol/sdk/server/mcp.js', () => ({
     tool: vi.fn(),
     connect: vi.fn().mockResolvedValue(undefined),
     name: 'TestServer',
-    version: '0.1.0',
+    version: '0.1.1',
   })),
 }));
 vi.spyOn(process.stderr, 'write').mockImplementation(() => true);

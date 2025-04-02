@@ -6,7 +6,7 @@ const program = new Command();
 program
   .name('ms-365-mcp-server')
   .description('Microsoft 365 MCP Server')
-  .version('0.1.0')
+  .version('0.1.1')
   .option('--login', 'Force login using device code flow')
   .option('--logout', 'Log out and clear saved credentials')
   .option('--file <path>', 'Excel file path to use (default: /Livet.xlsx)')
