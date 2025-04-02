@@ -66,3 +66,4 @@ This server provides several MCP tools for interacting with Excel files:
 - `close-session`: Close the current Excel session
 - `delete-chart`: Delete a chart from a worksheet
 - `get-charts`: Get all charts in a worksheet
+
