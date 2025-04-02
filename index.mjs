@@ -3,9 +3,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { parseArgs, handleAuth } from './cli.mjs';
+import { parseArgs } from './cli.mjs';
 import { readFileSync } from 'fs';
-import logger from './logger.mjs';
+import logger, { enableConsoleLogging } from './logger.mjs';
+import AuthManager from './auth.mjs';
 
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
 export const version = packageJson.version;
@@ -13,7 +14,8 @@ export const version = packageJson.version;
 const args = parseArgs();
 const filePath = args.file || '/Livet.xlsx';
 
-let authManager;
+const authManager = new AuthManager();
+await authManager.loadTokenCache();
 
 let sessionId = null;
 
@@ -52,7 +54,7 @@ async function createSession() {
 
 async function graphRequest(endpoint, options = {}) {
   try {
-    const accessToken = await authManager.getToken();
+    let accessToken = await authManager.getToken();
 
     const headers = {
       Authorization: `Bearer ${accessToken}`,
@@ -470,8 +472,38 @@ server.tool(
 
 async function main() {
   try {
+    if (args.v) {
+      enableConsoleLogging();
+    }
+
     logger.info('Microsoft 365 MCP Server starting...');
-    authManager = await handleAuth(args);
+
+    if (args.login) {
+      await authManager.acquireTokenByDeviceCode();
+      logger.info('Login completed, proceeding with session creation');
+      process.exit();
+    }
+
+    if (args.testLogin) {
+      try {
+        logger.info('Testing login...');
+        const token = await authManager.getToken();
+        if (token) {
+          logger.info('Login test successful');
+
+          console.log(JSON.stringify({ success: true, message: 'Login successful' }));
+        } else {
+          logger.error('Login test failed - no token received');
+          console.log(
+            JSON.stringify({ success: false, message: 'Login failed - no token received' })
+          );
+        }
+      } catch (error) {
+        logger.error(`Login test failed: ${error.message}`);
+        console.log(JSON.stringify({ success: false, message: `Login failed: ${error.message}` }));
+      }
+      process.exit(0);
+    }
 
     await createSession();
 
