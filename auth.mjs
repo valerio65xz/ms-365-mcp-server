@@ -32,8 +32,6 @@ class AuthManager {
     this.msalApp = new PublicClientApplication(this.config);
     this.accessToken = null;
     this.tokenExpiry = null;
-
-    this.loadTokenCache();
   }
 
   async loadTokenCache() {
@@ -78,34 +76,29 @@ class AuthManager {
   }
 
   async getToken(forceRefresh = false) {
-    try {
-      if (this.accessToken && this.tokenExpiry && this.tokenExpiry > Date.now() && !forceRefresh) {
-        return this.accessToken;
-      }
-
-      const accounts = await this.msalApp.getTokenCache().getAllAccounts();
-
-      if (accounts.length > 0) {
-        const silentRequest = {
-          account: accounts[0],
-          scopes: this.scopes,
-        };
-
-        try {
-          const response = await this.msalApp.acquireTokenSilent(silentRequest);
-          this.accessToken = response.accessToken;
-          this.tokenExpiry = new Date(response.expiresOn).getTime();
-          return this.accessToken;
-        } catch (error) {
-          logger.info('Silent token acquisition failed, using device code flow');
-        }
-      }
-
-      return await this.acquireTokenByDeviceCode();
-    } catch (error) {
-      logger.error(`Error getting token: ${error.message}`);
-      throw error;
+    if (this.accessToken && this.tokenExpiry && this.tokenExpiry > Date.now() && !forceRefresh) {
+      return this.accessToken;
     }
+
+    const accounts = await this.msalApp.getTokenCache().getAllAccounts();
+
+    if (accounts.length > 0) {
+      const silentRequest = {
+        account: accounts[0],
+        scopes: this.scopes,
+      };
+
+      try {
+        const response = await this.msalApp.acquireTokenSilent(silentRequest);
+        this.accessToken = response.accessToken;
+        this.tokenExpiry = new Date(response.expiresOn).getTime();
+        return this.accessToken;
+      } catch (error) {
+        logger.info('Silent token acquisition failed, using device code flow');
+      }
+    }
+
+    throw new Error('No valid token found');
   }
 
   async acquireTokenByDeviceCode() {
