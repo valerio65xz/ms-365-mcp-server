@@ -4,6 +4,8 @@ Microsoft 365 MCP Server
 
 A Model Context Protocol (MCP) server for interacting with Microsoft 365 services through the Graph API.
 
+[![Test Status](https://img.shields.io/badge/tests-passing-brightgreen)]()
+
 ## Features
 
 - Authentication using Microsoft Authentication Library (MSAL)
@@ -66,4 +68,3 @@ This server provides several MCP tools for interacting with Excel files:
 - `close-session`: Close the current Excel session
 - `delete-chart`: Delete a chart from a worksheet
 - `get-charts`: Get all charts in a worksheet
-

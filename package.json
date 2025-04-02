@@ -8,7 +8,8 @@
     "ms-365-mcp-server": "./index.mjs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "start": "node index.mjs",
     "format": "prettier --write \"**/*.{js,mjs,json,md}\""
   },
@@ -19,7 +20,7 @@
     "server"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@azure/msal-node": "^2.1.0",
     "@modelcontextprotocol/sdk": "^1.8.0",
@@ -28,6 +29,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "prettier": "^3.5.3"
+    "prettier": "^3.5.3",
+    "vitest": "^3.1.1"
   }
 }
