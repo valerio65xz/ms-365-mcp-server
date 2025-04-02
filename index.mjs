@@ -4,6 +4,10 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { parseArgs, handleAuth } from './cli.mjs';
+import { readFileSync } from 'fs';
+
+const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
+export const version = packageJson.version;
 
 const args = parseArgs();
 const filePath = args.file || '/Livet.xlsx';
@@ -149,7 +153,7 @@ async function formatResponse(response) {
 
 const server = new McpServer({
   name: 'ExcelUpdater',
-  version: '0.1.1',
+  version,
 });
 
 server.tool('login', {}, async () => {

@@ -1,12 +1,16 @@
 import { Command } from 'commander';
 import AuthManager from './auth.mjs';
+import { readFileSync } from 'fs';
+
+const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
+const version = packageJson.version;
 
 const program = new Command();
 
 program
   .name('ms-365-mcp-server')
   .description('Microsoft 365 MCP Server')
-  .version('0.1.1')
+  .version(version)
   .option('--login', 'Force login using device code flow')
   .option('--logout', 'Log out and clear saved credentials')
   .option('--file <path>', 'Excel file path to use (default: /Livet.xlsx)')

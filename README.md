@@ -1,4 +1,4 @@
-# ms-365-mcp-server (v0.1.0)
+# ms-365-mcp-server
 
 Microsoft 365 MCP Server
 
