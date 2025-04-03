@@ -3,7 +3,6 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 
-// First run tests to make sure everything is working
 console.log('Running tests...');
 try {
   execSync('npm test', { stdio: 'inherit' });

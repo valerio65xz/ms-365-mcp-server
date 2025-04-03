@@ -79,7 +79,8 @@ npm test
 
 This repository uses GitHub Actions for continuous integration and deployment:
 
-- **Build Workflow**: Runs on all pushes to main and pull requests. Verifies the project builds successfully and passes all tests.
+- **Build Workflow**: Runs on all pushes to main and pull requests. Verifies the project builds successfully and passes
+  all tests.
 - **Publish Workflow**: Automatically publishes to npm when a new GitHub release is created.
 
 ### Release Process
@@ -91,6 +92,7 @@ npm run release
 ```
 
 This script will:
+
 1. Run tests to verify everything works
 2. Bump the version number
 3. Commit the version changes
@@ -108,9 +110,9 @@ npx @softeria/ms-365-mcp-server [options]
 
 Options:
 
-- `--login`: Force login using device code flow
+- `--login`: Force login using device code flow and verify Graph API access
 - `--logout`: Log out and clear saved credentials
-- `--test-login`: Test login without starting the server (also verifies Graph API access)
+- `--test-login`: Test current authentication and verify Graph API access without starting the server
 - `-v`: Enable verbose logging
 
 ### Authentication
@@ -121,19 +123,37 @@ Options:
    ```bash
    npx @softeria/ms-365-mcp-server --login
    ```
+   This will display the login URL and code in the terminal.
 
-2. Starting the server normally and then sending the "login" command when prompted:
-   ```
-   > login
-   ```
+2. When using Claude Code or other MCP clients, use the login tools:
+    - First use the `login` tool, which will return the login URL and code
+    - Visit the URL and enter the code in your browser
+    - Then use the `verify-login` tool to check if the login was successful
 
-Both methods will trigger the device code flow authentication. You'll see instructions in the terminal about how to
-complete the authentication in your browser.
+Both methods trigger the device code flow authentication, but they handle the UI interaction differently:
 
-You can verify your authentication is working with the `--test-login` flag, which will check if your token can successfully fetch user data from Microsoft Graph API:
+- CLI version displays the instructions directly in the terminal
+- MCP tool version returns the instructions as data that can be shown in the client UI
+
+You can verify your authentication status with the `--test-login` flag, which will check if your token can successfully
+fetch user data from Microsoft Graph API:
 
 ```bash
 npx @softeria/ms-365-mcp-server --test-login
+```
+
+Both `--login` and `--test-login` will return a JSON response that includes your basic user information from Microsoft
+Graph API if authentication is successful:
+
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "userData": {
+    "displayName": "Your Name",
+    "userPrincipalName": "your.email@example.com"
+  }
+}
 ```
 
 Authentication tokens are cached securely in your system's credential store with fallback to file storage if needed.
@@ -142,8 +162,10 @@ Authentication tokens are cached securely in your system's credential store with
 
 This server provides several MCP tools for interacting with Excel files:
 
-- `login`: Force a new login with Microsoft
+- `login`: Start a new login process with Microsoft (returns login URL and code)
+- `verify-login`: Check if login was completed successfully and verify Graph API access
 - `logout`: Log out of Microsoft and clear credentials
+- `test-login`: Test current authentication status and verify Graph API access
 - `update-excel`: Update cell values in an Excel worksheet
 - `create-chart`: Create a chart in an Excel worksheet
 - `format-range`: Apply formatting to a range of cells

@@ -161,12 +161,14 @@ const server = new McpServer({
 
 server.tool('login', {}, async () => {
   try {
-    await authManager.getToken(true);
+    const text = await new Promise((r) => {
+      authManager.acquireTokenByDeviceCode(r);
+    });
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify({ message: 'Authentication successful' }),
+          text,
         },
       ],
     };
@@ -175,7 +177,7 @@ server.tool('login', {}, async () => {
       content: [
         {
           type: 'text',
-          text: JSON.stringify({ error: 'Authentication failed' }),
+          text: JSON.stringify({ error: `Authentication failed: ${error.message}` }),
         },
       ],
     };
@@ -203,6 +205,32 @@ server.tool('logout', {}, async () => {
       ],
     };
   }
+});
+
+server.tool('test-login', {}, async () => {
+  const result = await authManager.testLogin();
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify(result),
+      },
+    ],
+  };
+});
+
+server.tool('verify-login', {}, async () => {
+  // Test the login after the user has completed the device code authentication
+  const testResult = await authManager.testLogin();
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify(testResult),
+      },
+    ],
+  };
 });
 
 server.tool(
@@ -480,67 +508,15 @@ async function main() {
 
     if (args.login) {
       await authManager.acquireTokenByDeviceCode();
-      logger.info('Login completed, proceeding with session creation');
-      process.exit();
+      logger.info('Login completed, testing connection with Graph API...');
+      const result = await authManager.testLogin();
+      console.log(JSON.stringify(result));
+      process.exit(0);
     }
 
     if (args.testLogin) {
-      try {
-        logger.info('Testing login...');
-        const token = await authManager.getToken();
-        if (token) {
-          logger.info('Login test successful');
-
-          try {
-            logger.info('Fetching user data from Graph API...');
-            const response = await fetch('https://graph.microsoft.com/v1.0/me', {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-
-            if (response.ok) {
-              const userData = await response.json();
-              logger.info('Graph API user data fetch successful');
-              console.log(
-                JSON.stringify({
-                  success: true,
-                  message: 'Login successful',
-                  userData: {
-                    displayName: userData.displayName,
-                    userPrincipalName: userData.userPrincipalName,
-                  },
-                })
-              );
-            } else {
-              const errorText = await response.text();
-              logger.error(`Graph API user data fetch failed: ${response.status} - ${errorText}`);
-              console.log(
-                JSON.stringify({
-                  success: false,
-                  message: `Login successful but Graph API access failed: ${response.status}`,
-                })
-              );
-            }
-          } catch (graphError) {
-            logger.error(`Error fetching user data: ${graphError.message}`);
-            console.log(
-              JSON.stringify({
-                success: false,
-                message: `Login successful but Graph API access failed: ${graphError.message}`,
-              })
-            );
-          }
-        } else {
-          logger.error('Login test failed - no token received');
-          console.log(
-            JSON.stringify({ success: false, message: 'Login failed - no token received' })
-          );
-        }
-      } catch (error) {
-        logger.error(`Login test failed: ${error.message}`);
-        console.log(JSON.stringify({ success: false, message: `Login failed: ${error.message}` }));
-      }
+      const result = await authManager.testLogin();
+      console.log(JSON.stringify(result));
       process.exit(0);
     }
 

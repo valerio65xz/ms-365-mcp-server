@@ -101,18 +101,24 @@ class AuthManager {
     throw new Error('No valid token found');
   }
 
-  async acquireTokenByDeviceCode() {
+  async acquireTokenByDeviceCode(hack) {
     const deviceCodeRequest = {
       scopes: this.scopes,
       deviceCodeCallback: (response) => {
-        // We need to show this message to the user in console
-        console.log('\n' + response.message + '\n');
+        const text = ['\n', response.message, '\n'].join('');
+        if (hack) {
+          hack(text + 'After login run the "test login" command');
+        } else {
+          console.log(text);
+        }
         logger.info('Device code login initiated');
       },
     };
 
     try {
+      logger.info('Requesting device code...');
       const response = await this.msalApp.acquireTokenByDeviceCode(deviceCodeRequest);
+      logger.info('Device code login successful');
       this.accessToken = response.accessToken;
       this.tokenExpiry = new Date(response.expiresOn).getTime();
       await this.saveTokenCache();
@@ -120,6 +126,63 @@ class AuthManager {
     } catch (error) {
       logger.error(`Error in device code flow: ${error.message}`);
       throw error;
+    }
+  }
+
+  async testLogin() {
+    try {
+      logger.info('Testing login...');
+      const token = await this.getToken();
+
+      if (!token) {
+        logger.error('Login test failed - no token received');
+        return {
+          success: false,
+          message: 'Login failed - no token received',
+        };
+      }
+
+      logger.info('Token retrieved successfully, testing Graph API access...');
+
+      try {
+        const response = await fetch('https://graph.microsoft.com/v1.0/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          logger.info('Graph API user data fetch successful');
+          return {
+            success: true,
+            message: 'Login successful',
+            userData: {
+              displayName: userData.displayName,
+              userPrincipalName: userData.userPrincipalName,
+            },
+          };
+        } else {
+          const errorText = await response.text();
+          logger.error(`Graph API user data fetch failed: ${response.status} - ${errorText}`);
+          return {
+            success: false,
+            message: `Login successful but Graph API access failed: ${response.status}`,
+          };
+        }
+      } catch (graphError) {
+        logger.error(`Error fetching user data: ${graphError.message}`);
+        return {
+          success: false,
+          message: `Login successful but Graph API access failed: ${graphError.message}`,
+        };
+      }
+    } catch (error) {
+      logger.error(`Login test failed: ${error.message}`);
+      return {
+        success: false,
+        message: `Login failed: ${error.message}`,
+      };
     }
   }
 
