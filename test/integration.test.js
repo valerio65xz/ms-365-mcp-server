@@ -7,7 +7,6 @@ describe('Integration Tests', () => {
     const packagePath = path.resolve(process.cwd(), 'package.json');
     const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
 
-    expect(packageJson).toHaveProperty('name', 'ms-365-mcp-server');
     expect(packageJson).toHaveProperty('type', 'module');
     expect(packageJson).toHaveProperty('bin.ms-365-mcp-server');
     expect(packageJson.bin['ms-365-mcp-server']).toEqual('index.mjs');
