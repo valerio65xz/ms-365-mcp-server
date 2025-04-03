@@ -1,6 +1,6 @@
 {
   "name": "@softeria/ms-365-mcp-server",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "description": "Microsoft 365 MCP Server",
   "type": "module",
   "main": "index.mjs",
@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "start": "node index.mjs",
-    "format": "prettier --write \"**/*.{js,mjs,json,md}\""
+    "format": "prettier --write \"**/*.{js,mjs,json,md}\"",
+    "release": "node bin/release.mjs"
   },
   "keywords": [
     "microsoft",
