@@ -4,7 +4,8 @@ Microsoft 365 MCP Server
 
 A Model Context Protocol (MCP) server for interacting with Microsoft 365 services through the Graph API.
 
-[![Test Status](https://img.shields.io/badge/tests-passing-brightgreen)]()
+[![Build Status](https://github.com/softeria-eu/ms-365-mcp-server/actions/workflows/build.yml/badge.svg)](https://github.com/softeria-eu/ms-365-mcp-server/actions/workflows/build.yml)
+[![npm version](https://img.shields.io/npm/v/@softeria/ms-365-mcp-server.svg)](https://www.npmjs.com/package/@softeria/ms-365-mcp-server)
 
 ## Features
 
@@ -58,6 +59,45 @@ You can also use this configuration JSON in compatible Claude interfaces:
 }
 ```
 
+## Development
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/softeria-eu/ms-365-mcp-server.git
+cd ms-365-mcp-server
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+```
+
+### GitHub Actions
+
+This repository uses GitHub Actions for continuous integration and deployment:
+
+- **Build Workflow**: Runs on all pushes to main and pull requests. Verifies the project builds successfully and passes all tests.
+- **Publish Workflow**: Automatically publishes to npm when a new GitHub release is created.
+
+### Release Process
+
+To create a new release:
+
+```bash
+npm run release
+```
+
+This script will:
+1. Run tests to verify everything works
+2. Bump the version number
+3. Commit the version changes
+4. Push to GitHub
+5. Create a GitHub release
+6. Trigger the publish workflow to publish to npm
+
 ## Usage
 
 ### Command Line Options
@@ -70,7 +110,7 @@ Options:
 
 - `--login`: Force login using device code flow
 - `--logout`: Log out and clear saved credentials
-- `--test-login`: Test login without starting the server
+- `--test-login`: Test login without starting the server (also verifies Graph API access)
 - `-v`: Enable verbose logging
 
 ### Authentication

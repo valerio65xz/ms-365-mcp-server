@@ -3,6 +3,15 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 
+// First run tests to make sure everything is working
+console.log('Running tests...');
+try {
+  execSync('npm test', { stdio: 'inherit' });
+} catch (error) {
+  console.error('Tests failed! Aborting release.');
+  process.exit(1);
+}
+
 console.log('Bumping version...');
 execSync('npm version --no-git-tag-version patch');
 
@@ -22,3 +31,4 @@ execSync(`gh release create v${version} --title 'v${version}' --notes 'Version $
 });
 
 console.log(`Release v${version} created successfully!`);
+// GitHub Actions workflow will handle the npm publish automatically
