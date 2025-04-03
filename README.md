@@ -10,25 +10,52 @@ A Model Context Protocol (MCP) server for interacting with Microsoft 365 service
 
 - Authentication using Microsoft Authentication Library (MSAL)
 - Excel file operations:
-  - Update cell values
-  - Create and manage charts
-  - Format cells
-  - Sort data
-  - Create tables
-  - Read cell values
-  - List worksheets
+    - Update cell values
+    - Create and manage charts
+    - Format cells
+    - Sort data
+    - Create tables
+    - Read cell values
+    - List worksheets
 - Built on the Model Context Protocol
 
 ## Installation
 
 ```bash
-npm install -g ms-365-mcp-server
+npx @softeria/ms-365-mcp-server
 ```
 
-Or use directly with npx:
+## Integration with Claude
+
+### Claude Code CLI
+
+To add this MCP server to Claude Code CLI:
 
 ```bash
-npx ms-365-mcp-server
+claude mcp add ms -- npx @softeria/ms-365-mcp-server
+```
+
+### Claude Desktop
+
+To add this MCP server to Claude Desktop:
+
+1. Launch Claude Desktop
+2. Go to Settings > MCPs
+3. Click "Add MCP"
+4. Set the following configuration:
+    - Name: `ms` (or any name you prefer)
+    - Command: `npx @softeria/ms-365-mcp-server`
+    - Click "Add"
+
+### Direct Configuration
+
+You can also use this configuration JSON in compatible Claude interfaces:
+
+```json
+{
+  "name": "ms",
+  "command": "npx @softeria/ms-365-mcp-server"
+}
 ```
 
 ## Usage
@@ -36,19 +63,38 @@ npx ms-365-mcp-server
 ### Command Line Options
 
 ```bash
-npx ms-365-mcp-server [options]
+npx @softeria/ms-365-mcp-server [options]
 ```
 
 Options:
 
 - `--login`: Force login using device code flow
 - `--logout`: Log out and clear saved credentials
-- `--file <path>`: Excel file path to use (default: "/Livet.xlsx")
-- `--silent`: Run without informational messages to stderr
+- `--test-login`: Test login without starting the server
+- `-v`: Enable verbose logging
 
 ### Authentication
 
-The first time you run the server, it will automatically initiate the device code flow authentication. You'll see instructions in the terminal about how to complete the authentication in your browser.
+**Important:** You must authenticate before using the MCP server. There are two ways to authenticate:
+
+1. Running the server with the `--login` flag:
+   ```bash
+   npx @softeria/ms-365-mcp-server --login
+   ```
+
+2. Starting the server normally and then sending the "login" command when prompted:
+   ```
+   > login
+   ```
+
+Both methods will trigger the device code flow authentication. You'll see instructions in the terminal about how to
+complete the authentication in your browser.
+
+You can verify your authentication is working with the `--test-login` flag:
+
+```bash
+npx @softeria/ms-365-mcp-server --test-login
+```
 
 Authentication tokens are cached securely in your system's credential store with fallback to file storage if needed.
 
