@@ -491,7 +491,46 @@ async function main() {
         if (token) {
           logger.info('Login test successful');
 
-          console.log(JSON.stringify({ success: true, message: 'Login successful' }));
+          try {
+            logger.info('Fetching user data from Graph API...');
+            const response = await fetch('https://graph.microsoft.com/v1.0/me', {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            if (response.ok) {
+              const userData = await response.json();
+              logger.info('Graph API user data fetch successful');
+              console.log(
+                JSON.stringify({
+                  success: true,
+                  message: 'Login successful',
+                  userData: {
+                    displayName: userData.displayName,
+                    userPrincipalName: userData.userPrincipalName,
+                  },
+                })
+              );
+            } else {
+              const errorText = await response.text();
+              logger.error(`Graph API user data fetch failed: ${response.status} - ${errorText}`);
+              console.log(
+                JSON.stringify({
+                  success: false,
+                  message: `Login successful but Graph API access failed: ${response.status}`,
+                })
+              );
+            }
+          } catch (graphError) {
+            logger.error(`Error fetching user data: ${graphError.message}`);
+            console.log(
+              JSON.stringify({
+                success: false,
+                message: `Login successful but Graph API access failed: ${graphError.message}`,
+              })
+            );
+          }
         } else {
           logger.error('Login test failed - no token received');
           console.log(

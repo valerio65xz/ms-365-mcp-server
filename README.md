@@ -90,7 +90,7 @@ Options:
 Both methods will trigger the device code flow authentication. You'll see instructions in the terminal about how to
 complete the authentication in your browser.
 
-You can verify your authentication is working with the `--test-login` flag:
+You can verify your authentication is working with the `--test-login` flag, which will check if your token can successfully fetch user data from Microsoft Graph API:
 
 ```bash
 npx @softeria/ms-365-mcp-server --test-login
