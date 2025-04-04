@@ -105,7 +105,7 @@ This script will:
 3. Commit the version changes
 4. Push to GitHub
 5. Create a GitHub release
-6. Trigger the publish workflow to publish to npm
+6. Trigger the publishing workflow to publish to npm
 
 ## Usage
 
@@ -167,12 +167,31 @@ Authentication tokens are cached securely in your system's credential store with
 
 ### MCP Tools
 
-This server provides several MCP tools for interacting with Excel files:
+This server provides several MCP tools for interacting with Microsoft 365 services:
+
+#### Authentication Tools
 
 - `login`: Start a new login process with Microsoft (returns login URL and code)
 - `verify-login`: Check if login was completed successfully and verify Graph API access
 - `logout`: Log out of Microsoft and clear credentials
 - `test-login`: Test current authentication status and verify Graph API access
+
+#### Files/OneDrive Tools
+
+- `list-files`: List files and folders in a specified path
+- `get-file`: Get details of a specific file
+- `create-folder`: Create a new folder
+- `delete-item`: Delete a file or folder
+- `copy-item`: Copy a file or folder to a new location
+- `move-item`: Move a file or folder to a new location
+- `rename-item`: Rename a file or folder
+- `search-files`: Search for files matching a query
+- `get-shared-items`: Get a list of items shared with you
+- `create-sharing-link`: Create a sharing link for a file or folder
+- `get-file-content`: Get the content of a file
+
+#### Excel Tools
+
 - `update-excel`: Update cell values in an Excel worksheet
 - `create-chart`: Create a chart in an Excel worksheet
 - `format-range`: Apply formatting to a range of cells

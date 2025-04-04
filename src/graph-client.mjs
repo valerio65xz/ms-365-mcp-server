@@ -51,44 +51,61 @@ class GraphClient {
         ...options.headers,
       };
 
-      const response = await fetch(
-        `https://graph.microsoft.com/v1.0/me/drive/root:${this.filePath}:${endpoint}`,
-        {
-          headers,
-          ...options,
-        }
-      );
+      let url;
+      if (
+        endpoint.startsWith('/drive') ||
+        endpoint.startsWith('/users') ||
+        endpoint.startsWith('/me')
+      ) {
+        url = `https://graph.microsoft.com/v1.0${endpoint}`;
+      } else {
+        url = `https://graph.microsoft.com/v1.0/me/drive/root:${this.filePath}:${endpoint}`;
+      }
+
+      const response = await fetch(url, {
+        headers,
+        ...options,
+      });
 
       if (response.status === 401) {
         logger.info('Access token expired, refreshing...');
         const newToken = await this.authManager.getToken(true);
-        await this.createSession();
+
+        if (
+          !endpoint.startsWith('/drive') &&
+          !endpoint.startsWith('/users') &&
+          !endpoint.startsWith('/me')
+        ) {
+          await this.createSession();
+        }
 
         headers.Authorization = `Bearer ${newToken}`;
-        if (this.sessionId) {
+        if (
+          this.sessionId &&
+          !endpoint.startsWith('/drive') &&
+          !endpoint.startsWith('/users') &&
+          !endpoint.startsWith('/me')
+        ) {
           headers['workbook-session-id'] = this.sessionId;
         }
 
-        const retryResponse = await fetch(
-          `https://graph.microsoft.com/v1.0/me/drive/root:${this.filePath}:${endpoint}`,
-          {
-            headers,
-            ...options,
-          }
-        );
+        const retryResponse = await fetch(url, {
+          headers,
+          ...options,
+        });
 
         if (!retryResponse.ok) {
           throw new Error(`Graph API error: ${retryResponse.status} ${await retryResponse.text()}`);
         }
 
-        return this.formatResponse(retryResponse);
+        return this.formatResponse(retryResponse, options.rawResponse);
       }
 
       if (!response.ok) {
         throw new Error(`Graph API error: ${response.status} ${await response.text()}`);
       }
 
-      return this.formatResponse(response);
+      return this.formatResponse(response, options.rawResponse);
     } catch (error) {
       logger.error(`Error in Graph API request: ${error}`);
       return {
@@ -97,7 +114,7 @@ class GraphClient {
     }
   }
 
-  async formatResponse(response) {
+  async formatResponse(response, rawResponse = false) {
     try {
       if (response.status === 204) {
         return {
@@ -106,6 +123,30 @@ class GraphClient {
               type: 'text',
               text: JSON.stringify({
                 message: 'Operation completed successfully',
+              }),
+            },
+          ],
+        };
+      }
+
+      if (rawResponse) {
+        const contentType = response.headers.get('content-type');
+
+        if (contentType && contentType.startsWith('text/')) {
+          const text = await response.text();
+          return {
+            content: [{ type: 'text', text }],
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                message: 'Binary file content received',
+                contentType: contentType,
+                contentLength: response.headers.get('content-length'),
               }),
             },
           ],
@@ -136,6 +177,7 @@ class GraphClient {
         content: [{ type: 'text', text: JSON.stringify(result) }],
       };
     } catch (error) {
+      logger.error(`Error formatting response: ${error}`);
       return {
         content: [{ type: 'text', text: JSON.stringify({ message: 'Success' }) }],
       };

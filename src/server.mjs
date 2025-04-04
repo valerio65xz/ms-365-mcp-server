@@ -1,10 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import logger, { enableConsoleLogging } from './logger.mjs';
-import { registerTools } from './tools.mjs';
+import { registerExcelTools } from './excel-tools.mjs';
+import { registerAuthTools } from './auth-tools.mjs';
+import { registerFilesTools } from './files-tools.mjs';
 import GraphClient from './graph-client.mjs';
 
-class MicrosoftExcelServer {
+class MicrosoftGraphServer {
   constructor(authManager, options = {}) {
     this.authManager = authManager;
     this.options = options;
@@ -15,11 +17,17 @@ class MicrosoftExcelServer {
 
   async initialize(version) {
     this.server = new McpServer({
-      name: 'ExcelUpdater',
+      name: 'Microsoft365MCP',
       version,
     });
-    registerTools(this.server, this.graphClient, this.authManager);
-    await this.graphClient.createSession();
+
+    registerAuthTools(this.server, this.authManager);
+    registerFilesTools(this.server, this.graphClient);
+    registerExcelTools(this.server, this.graphClient);
+
+    if (!this.options.login && !this.options.testLogin) {
+      await this.graphClient.createSession();
+    }
   }
 
   async start() {
@@ -35,4 +43,4 @@ class MicrosoftExcelServer {
   }
 }
 
-export default MicrosoftExcelServer;
+export default MicrosoftGraphServer;

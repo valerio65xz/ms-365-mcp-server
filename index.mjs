@@ -3,7 +3,7 @@
 import { parseArgs } from './src/cli.mjs';
 import logger from './src/logger.mjs';
 import AuthManager from './src/auth.mjs';
-import MicrosoftExcelServer from './src/server.mjs';
+import MicrosoftGraphServer from './src/server.mjs';
 import { version } from './src/version.mjs';
 
 async function main() {
@@ -34,7 +34,7 @@ async function main() {
       process.exit(0);
     }
 
-    const server = new MicrosoftExcelServer(authManager, args);
+    const server = new MicrosoftGraphServer(authManager, args);
     await server.initialize(version);
     await server.start();
   } catch (error) {
