@@ -223,8 +223,10 @@ Tools for working with Outlook calendars.
 - `list-events`: List events from a calendar with optional filtering, sorting, and date ranges
 - `get-detailed-events`: Get events with expanded properties and options to include body, attendees, extensions, etc.
 - `get-event`: Get detailed information about a specific calendar event
-- `create-event`: Create a new calendar event with comprehensive options (sensitivity, importance, free/busy status, optional attendees, reminders, online meetings, categories)
-- `create-recurring-event`: Create recurring events (daily, weekly, monthly, yearly) with the same comprehensive options and flexible recurrence patterns
+- `create-event`: Create a new calendar event with comprehensive options (sensitivity, importance, free/busy status,
+  optional attendees, reminders, online meetings, categories)
+- `create-recurring-event`: Create recurring events (daily, weekly, monthly, yearly) with the same comprehensive options
+  and flexible recurrence patterns
 - `update-event`: Update an existing calendar event
 - `delete-event`: Delete a calendar event
 - `accept-event`: Accept a calendar meeting invitation
@@ -232,3 +234,9 @@ Tools for working with Outlook calendars.
 - `tentatively-accept-event`: Tentatively accept a calendar meeting invitation
 - `find-meeting-times`: Find available meeting times for a set of attendees
 - `get-schedules`: Get availability information for multiple users or resource rooms
+
+#### Mail Tools
+
+Tools for working with Outlook email.
+
+- `list-messages`: List emails from any mail folder with powerful filtering, searching, and sorting options

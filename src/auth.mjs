@@ -25,6 +25,8 @@ const DEFAULT_SCOPES = [
   'User.ReadBasic.All',
   'Calendars.Read',
   'Calendars.ReadWrite',
+  'Mail.Read',
+  'Mail.ReadWrite',
 ];
 
 class AuthManager {
