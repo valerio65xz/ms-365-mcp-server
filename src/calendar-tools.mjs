@@ -119,6 +119,10 @@ export function registerCalendarTools(server, graphClient) {
       location: z.string().optional().describe('Event location'),
       isAllDay: z.boolean().optional().default(false).describe('Whether this is an all-day event'),
       attendees: z.array(z.string()).optional().describe('Email addresses of attendees'),
+      optionalAttendees: z
+        .array(z.string())
+        .optional()
+        .describe('Email addresses of optional attendees'),
       reminderMinutesBeforeStart: z
         .number()
         .optional()
@@ -128,6 +132,22 @@ export function registerCalendarTools(server, graphClient) {
         .optional()
         .default(false)
         .describe('Create an online meeting for this event'),
+      sensitivity: z
+        .enum(['normal', 'personal', 'private', 'confidential'])
+        .optional()
+        .default('normal')
+        .describe('Sensitivity level of the event'),
+      showAs: z
+        .enum(['free', 'tentative', 'busy', 'oof', 'workingElsewhere', 'unknown'])
+        .optional()
+        .default('busy')
+        .describe('How the event shows in calendar (free/busy status)'),
+      importance: z
+        .enum(['low', 'normal', 'high'])
+        .optional()
+        .default('normal')
+        .describe('Importance of the event'),
+      categories: z.array(z.string()).optional().describe('Categories/tags for the event'),
       calendarId: z
         .string()
         .optional()
@@ -142,8 +162,13 @@ export function registerCalendarTools(server, graphClient) {
       location,
       isAllDay,
       attendees,
+      optionalAttendees,
       reminderMinutesBeforeStart,
       isOnlineMeeting,
+      sensitivity,
+      showAs,
+      importance,
+      categories,
       calendarId,
     }) => {
       const event = {
@@ -157,6 +182,9 @@ export function registerCalendarTools(server, graphClient) {
           dateTime: endDateTime,
           timeZone: timeZone,
         },
+        sensitivity,
+        showAs,
+        importance,
       };
 
       if (body) {
@@ -172,13 +200,32 @@ export function registerCalendarTools(server, graphClient) {
         };
       }
 
+      const allAttendees = [];
+
       if (attendees && attendees.length > 0) {
-        event.attendees = attendees.map((email) => ({
-          emailAddress: {
-            address: email,
-          },
-          type: 'required',
-        }));
+        allAttendees.push(
+          ...attendees.map((email) => ({
+            emailAddress: {
+              address: email,
+            },
+            type: 'required',
+          }))
+        );
+      }
+
+      if (optionalAttendees && optionalAttendees.length > 0) {
+        allAttendees.push(
+          ...optionalAttendees.map((email) => ({
+            emailAddress: {
+              address: email,
+            },
+            type: 'optional',
+          }))
+        );
+      }
+
+      if (allAttendees.length > 0) {
+        event.attendees = allAttendees;
       }
 
       if (reminderMinutesBeforeStart !== undefined) {
@@ -189,6 +236,10 @@ export function registerCalendarTools(server, graphClient) {
       if (isOnlineMeeting) {
         event.isOnlineMeeting = true;
         event.onlineMeetingProvider = 'teamsForBusiness';
+      }
+
+      if (categories && categories.length > 0) {
+        event.categories = categories;
       }
 
       const endpoint = calendarId ? `/me/calendars/${calendarId}/events` : '/me/calendar/events';
@@ -412,6 +463,351 @@ export function registerCalendarTools(server, graphClient) {
       return graphClient.graphRequest('/me/findMeetingTimes', {
         method: 'POST',
         body: JSON.stringify(meetingTimeRequest),
+      });
+    }
+  );
+
+  server.tool(
+    'get-schedules',
+    {
+      schedules: z.array(z.string()).describe('Email addresses of users or resource rooms'),
+      startDateTime: z.string().describe('Start date/time in ISO format'),
+      endDateTime: z.string().describe('End date/time in ISO format'),
+      timeZone: z.string().optional().default('UTC').describe('Time zone for the schedule'),
+    },
+    async ({ schedules, startDateTime, endDateTime, timeZone }) => {
+      const scheduleRequest = {
+        schedules,
+        startTime: {
+          dateTime: startDateTime,
+          timeZone,
+        },
+        endTime: {
+          dateTime: endDateTime,
+          timeZone,
+        },
+        availabilityViewInterval: 30,
+      };
+
+      return graphClient.graphRequest('/me/calendar/getSchedule', {
+        method: 'POST',
+        body: JSON.stringify(scheduleRequest),
+      });
+    }
+  );
+
+  server.tool(
+    'get-detailed-events',
+    {
+      calendarId: z
+        .string()
+        .optional()
+        .describe('ID of the calendar (leave empty for default calendar)'),
+      startDateTime: z.string().optional().describe('Start date/time in ISO format'),
+      endDateTime: z.string().optional().describe('End date/time in ISO format'),
+      includeAttendees: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe('Include attendee information'),
+      includeBody: z.boolean().optional().default(false).describe('Include event body content'),
+      includeExtensions: z.boolean().optional().default(false).describe('Include event extensions'),
+      includeInstances: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Include recurring event instances'),
+    },
+    async ({
+      calendarId,
+      startDateTime,
+      endDateTime,
+      includeAttendees,
+      includeBody,
+      includeExtensions,
+      includeInstances,
+    }) => {
+      let endpoint = calendarId ? `/me/calendars/${calendarId}/events` : '/me/calendar/events';
+
+      const queryParams = [];
+      const selectFields = [
+        'id',
+        'subject',
+        'organizer',
+        'start',
+        'end',
+        'location',
+        'isOnlineMeeting',
+        'onlineMeetingUrl',
+      ];
+      const expandFields = [];
+
+      if (startDateTime && endDateTime) {
+        endpoint = endpoint.replace('/events', '/calendarView');
+        queryParams.push(`startDateTime=${encodeURIComponent(startDateTime)}`);
+        queryParams.push(`endDateTime=${encodeURIComponent(endDateTime)}`);
+      }
+
+      if (includeAttendees) {
+        selectFields.push('attendees');
+      }
+
+      if (includeBody) {
+        selectFields.push('body');
+      }
+
+      if (includeExtensions) {
+        expandFields.push('extensions');
+      }
+
+      if (includeInstances) {
+        expandFields.push('instances');
+      }
+
+      queryParams.push(`$select=${selectFields.join(',')}`);
+
+      if (expandFields.length > 0) {
+        queryParams.push(`$expand=${expandFields.join(',')}`);
+      }
+
+      if (queryParams.length > 0) {
+        endpoint += '?' + queryParams.join('&');
+      }
+
+      return graphClient.graphRequest(endpoint, {
+        method: 'GET',
+      });
+    }
+  );
+
+  server.tool(
+    'tentatively-accept-event',
+    {
+      eventId: z.string().describe('ID of the event to tentatively accept'),
+      comment: z.string().optional().describe('Optional comment with your response'),
+      sendResponse: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe('Send a response to the organizer'),
+      calendarId: z
+        .string()
+        .optional()
+        .describe('ID of the calendar (leave empty for default calendar)'),
+    },
+    async ({ eventId, comment, sendResponse, calendarId }) => {
+      const endpoint = calendarId
+        ? `/me/calendars/${calendarId}/events/${eventId}/tentativelyAccept`
+        : `/me/calendar/events/${eventId}/tentativelyAccept`;
+
+      const body = { sendResponse };
+      if (comment) {
+        body.comment = comment;
+      }
+
+      return graphClient.graphRequest(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    }
+  );
+
+  server.tool(
+    'create-recurring-event',
+    {
+      subject: z.string().describe('Event subject/title'),
+      body: z.string().optional().describe('Event description/body'),
+      startDateTime: z.string().describe('First occurrence start date/time in ISO format'),
+      endDateTime: z.string().describe('First occurrence end date/time in ISO format'),
+      timeZone: z.string().optional().default('UTC').describe('Time zone for the event'),
+      location: z.string().optional().describe('Event location'),
+      isAllDay: z.boolean().optional().default(false).describe('Whether this is an all-day event'),
+      attendees: z.array(z.string()).optional().describe('Email addresses of required attendees'),
+      optionalAttendees: z
+        .array(z.string())
+        .optional()
+        .describe('Email addresses of optional attendees'),
+      recurrenceType: z
+        .enum(['daily', 'weekly', 'monthly', 'yearly'])
+        .describe('Type of recurrence'),
+      interval: z
+        .number()
+        .default(1)
+        .describe('Interval between occurrences (e.g., 2 for every 2 weeks)'),
+      daysOfWeek: z
+        .array(
+          z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
+        )
+        .optional()
+        .describe('Days of the week for weekly recurrence'),
+      dayOfMonth: z.number().optional().describe('Day of the month for monthly recurrence'),
+      monthOfYear: z.number().optional().describe('Month of the year for yearly recurrence (1-12)'),
+      endAfterOccurrences: z.number().optional().describe('End after this many occurrences'),
+      endByDate: z.string().optional().describe('End by this date (ISO format)'),
+      reminderMinutesBeforeStart: z
+        .number()
+        .optional()
+        .describe('Reminder time in minutes before event starts'),
+      isOnlineMeeting: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Create an online meeting for this event'),
+      sensitivity: z
+        .enum(['normal', 'personal', 'private', 'confidential'])
+        .optional()
+        .default('normal')
+        .describe('Sensitivity level of the event'),
+      showAs: z
+        .enum(['free', 'tentative', 'busy', 'oof', 'workingElsewhere', 'unknown'])
+        .optional()
+        .default('busy')
+        .describe('How the event shows in calendar (free/busy status)'),
+      importance: z
+        .enum(['low', 'normal', 'high'])
+        .optional()
+        .default('normal')
+        .describe('Importance of the event'),
+      categories: z.array(z.string()).optional().describe('Categories/tags for the event'),
+      calendarId: z
+        .string()
+        .optional()
+        .describe('ID of the calendar (leave empty for default calendar)'),
+    },
+    async ({
+      subject,
+      body,
+      startDateTime,
+      endDateTime,
+      timeZone,
+      location,
+      isAllDay,
+      attendees,
+      optionalAttendees,
+      recurrenceType,
+      interval,
+      daysOfWeek,
+      dayOfMonth,
+      monthOfYear,
+      endAfterOccurrences,
+      endByDate,
+      reminderMinutesBeforeStart,
+      isOnlineMeeting,
+      sensitivity,
+      showAs,
+      importance,
+      categories,
+      calendarId,
+    }) => {
+      let pattern = {
+        type: recurrenceType,
+        interval: interval,
+      };
+
+      if (recurrenceType === 'weekly' && daysOfWeek && daysOfWeek.length > 0) {
+        pattern.daysOfWeek = daysOfWeek;
+      } else if (recurrenceType === 'monthly' && dayOfMonth) {
+        pattern.dayOfMonth = dayOfMonth;
+      } else if (recurrenceType === 'yearly' && monthOfYear) {
+        pattern.month = monthOfYear;
+        if (dayOfMonth) {
+          pattern.dayOfMonth = dayOfMonth;
+        }
+      }
+
+      let recurrenceRange = {
+        type: 'noEnd',
+        startDate: startDateTime.split('T')[0],
+      };
+
+      if (endAfterOccurrences) {
+        recurrenceRange.type = 'numbered';
+        recurrenceRange.numberOfOccurrences = endAfterOccurrences;
+      } else if (endByDate) {
+        recurrenceRange.type = 'endDate';
+        recurrenceRange.endDate = endByDate.split('T')[0];
+      }
+
+      const event = {
+        subject,
+        isAllDay,
+        start: {
+          dateTime: startDateTime,
+          timeZone: timeZone,
+        },
+        end: {
+          dateTime: endDateTime,
+          timeZone: timeZone,
+        },
+        recurrence: {
+          pattern: pattern,
+          range: recurrenceRange,
+        },
+        sensitivity,
+        showAs,
+        importance,
+      };
+
+      if (body) {
+        event.body = {
+          contentType: 'html',
+          content: body,
+        };
+      }
+
+      if (location) {
+        event.location = {
+          displayName: location,
+        };
+      }
+
+      const allAttendees = [];
+
+      if (attendees && attendees.length > 0) {
+        allAttendees.push(
+          ...attendees.map((email) => ({
+            emailAddress: {
+              address: email,
+            },
+            type: 'required',
+          }))
+        );
+      }
+
+      if (optionalAttendees && optionalAttendees.length > 0) {
+        allAttendees.push(
+          ...optionalAttendees.map((email) => ({
+            emailAddress: {
+              address: email,
+            },
+            type: 'optional',
+          }))
+        );
+      }
+
+      if (allAttendees.length > 0) {
+        event.attendees = allAttendees;
+      }
+
+      if (reminderMinutesBeforeStart !== undefined) {
+        event.reminderMinutesBeforeStart = reminderMinutesBeforeStart;
+        event.isReminderOn = true;
+      }
+
+      if (isOnlineMeeting) {
+        event.isOnlineMeeting = true;
+        event.onlineMeetingProvider = 'teamsForBusiness';
+      }
+
+      if (categories && categories.length > 0) {
+        event.categories = categories;
+      }
+
+      const endpoint = calendarId ? `/me/calendars/${calendarId}/events` : '/me/calendar/events';
+
+      return graphClient.graphRequest(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(event),
       });
     }
   );
