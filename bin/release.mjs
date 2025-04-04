@@ -3,6 +3,16 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 
+const args = process.argv.slice(2);
+const releaseType = args[0] || 'patch';
+
+if (!['major', 'minor', 'patch'].includes(releaseType)) {
+  console.error('Invalid release type. Must be one of: major, minor, patch');
+  process.exit(1);
+}
+
+console.log(`Release type: ${releaseType}`);
+
 console.log('Running tests...');
 try {
   execSync('npm test', { stdio: 'inherit' });
@@ -11,8 +21,8 @@ try {
   process.exit(1);
 }
 
-console.log('Bumping version...');
-execSync('npm version --no-git-tag-version patch');
+console.log(`Bumping ${releaseType} version...`);
+execSync(`npm version --no-git-tag-version ${releaseType}`);
 
 const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 const version = packageJson.version;

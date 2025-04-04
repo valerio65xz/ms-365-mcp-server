@@ -88,13 +88,20 @@ This repository uses GitHub Actions for continuous integration and deployment:
 To create a new release:
 
 ```bash
+# Default (patch version): 0.1.11 -> 0.1.12
 npm run release
+
+# Minor version: 0.1.11 -> 0.2.0
+npm run release minor
+
+# Major version: 0.1.11 -> 1.0.0
+npm run release major
 ```
 
 This script will:
 
 1. Run tests to verify everything works
-2. Bump the version number
+2. Bump the version number according to the specified type (patch by default)
 3. Commit the version changes
 4. Push to GitHub
 5. Create a GitHub release
