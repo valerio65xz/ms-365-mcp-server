@@ -213,3 +213,18 @@ Example workflow:
 2. Use `list-worksheets` with the file path to see available worksheets
 3. Use `get-range` to retrieve data from the Excel file
 4. Use other Excel tools to manipulate the file as needed
+
+#### Calendar Tools
+
+Tools for working with Outlook calendars.
+
+- `list-calendars`: List all calendars
+- `get-default-calendar`: Get information about the default calendar
+- `list-events`: List events from a calendar with optional filtering, sorting, and date ranges
+- `get-event`: Get detailed information about a specific calendar event
+- `create-event`: Create a new calendar event with options for online meetings, attendees, and reminders
+- `update-event`: Update an existing calendar event
+- `delete-event`: Delete a calendar event
+- `accept-event`: Accept a calendar meeting invitation
+- `decline-event`: Decline a calendar meeting invitation
+- `find-meeting-times`: Find available meeting times for a set of attendees

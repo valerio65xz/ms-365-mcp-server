@@ -23,6 +23,8 @@ const DEFAULT_SCOPES = [
   'Sites.ReadWrite.All',
   'User.Read',
   'User.ReadBasic.All',
+  'Calendars.Read',
+  'Calendars.ReadWrite',
 ];
 
 class AuthManager {
