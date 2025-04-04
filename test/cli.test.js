@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { parseArgs } from '../src/cli.mjs';
+
 vi.mock('commander', () => {
   const mockCommand = {
     name: vi.fn().mockReturnThis(),
@@ -24,9 +26,6 @@ vi.mock('../auth.mjs', () => {
 });
 vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {});
-import { Command } from 'commander';
-import AuthManager from '../auth.mjs';
-import { parseArgs } from '../cli.mjs';
 
 describe('CLI Module', () => {
   beforeEach(() => {

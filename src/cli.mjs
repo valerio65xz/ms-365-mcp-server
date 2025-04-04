@@ -1,7 +1,11 @@
 import { Command } from 'commander';
 import { readFileSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const packageJsonPath = path.join(__dirname, '..', 'package.json');
+const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 const version = packageJson.version;
 
 const program = new Command();
@@ -13,7 +17,8 @@ program
   .option('-v', 'Enable verbose logging')
   .option('--login', 'Login using device code flow')
   .option('--logout', 'Log out and clear saved credentials')
-  .option('--test-login', 'Test login without starting the server');
+  .option('--test-login', 'Test login without starting the server')
+  .option('--file <path>', 'Specify Excel file path');
 
 export function parseArgs() {
   program.parse();

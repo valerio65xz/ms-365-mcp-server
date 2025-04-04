@@ -1,11 +1,10 @@
 import winston from 'winston';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const logsDir = path.join(__dirname, 'logs');
-import fs from 'fs';
+const logsDir = path.join(__dirname, '..', 'logs');
 
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir);

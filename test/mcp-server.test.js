@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 vi.mock('@modelcontextprotocol/sdk/server/mcp.js', () => ({
   McpServer: vi.fn(() => ({
@@ -10,8 +11,6 @@ vi.mock('@modelcontextprotocol/sdk/server/mcp.js', () => ({
   })),
 }));
 vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 describe('MCP Server', () => {
   let server;
