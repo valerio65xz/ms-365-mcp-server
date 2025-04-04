@@ -1,19 +1,27 @@
 import logger from './logger.mjs';
 
 class GraphClient {
-  constructor(authManager, filePath = '/Livet.xlsx') {
+  constructor(authManager) {
     this.authManager = authManager;
-    this.filePath = filePath;
-    this.sessionId = null;
+    this.sessions = new Map();
   }
 
-  async createSession() {
+  async createSession(filePath) {
     try {
-      logger.info('Creating new Excel session...');
+      if (!filePath) {
+        logger.error('No file path provided for Excel session');
+        return null;
+      }
+
+      if (this.sessions.has(filePath)) {
+        return this.sessions.get(filePath);
+      }
+
+      logger.info(`Creating new Excel session for file: ${filePath}`);
       const accessToken = await this.authManager.getToken();
 
       const response = await fetch(
-        `https://graph.microsoft.com/v1.0/me/drive/root:${this.filePath}:/workbook/createSession`,
+        `https://graph.microsoft.com/v1.0/me/drive/root:${filePath}:/workbook/createSession`,
         {
           method: 'POST',
           headers: {
@@ -31,9 +39,10 @@ class GraphClient {
       }
 
       const result = await response.json();
-      logger.info('Session created successfully');
-      this.sessionId = result.id;
-      return this.sessionId;
+      logger.info(`Session created successfully for file: ${filePath}`);
+
+      this.sessions.set(filePath, result.id);
+      return result.id;
     } catch (error) {
       logger.error(`Error creating Excel session: ${error}`);
       return null;
@@ -44,23 +53,46 @@ class GraphClient {
     try {
       let accessToken = await this.authManager.getToken();
 
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        ...(this.sessionId && { 'workbook-session-id': this.sessionId }),
-        ...options.headers,
-      };
-
       let url;
+      let sessionId = null;
+
       if (
+        options.excelFile &&
+        !endpoint.startsWith('/drive') &&
+        !endpoint.startsWith('/users') &&
+        !endpoint.startsWith('/me')
+      ) {
+        sessionId = this.sessions.get(options.excelFile);
+
+        if (!sessionId) {
+          sessionId = await this.createSession(options.excelFile);
+        }
+
+        url = `https://graph.microsoft.com/v1.0/me/drive/root:${options.excelFile}:${endpoint}`;
+      } else if (
         endpoint.startsWith('/drive') ||
         endpoint.startsWith('/users') ||
         endpoint.startsWith('/me')
       ) {
         url = `https://graph.microsoft.com/v1.0${endpoint}`;
       } else {
-        url = `https://graph.microsoft.com/v1.0/me/drive/root:${this.filePath}:${endpoint}`;
+        logger.error('Excel operation requested without specifying a file');
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ error: 'No Excel file specified for this operation' }),
+            },
+          ],
+        };
       }
+
+      const headers = {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        ...(sessionId && { 'workbook-session-id': sessionId }),
+        ...options.headers,
+      };
 
       const response = await fetch(url, {
         headers,
@@ -72,21 +104,22 @@ class GraphClient {
         const newToken = await this.authManager.getToken(true);
 
         if (
+          options.excelFile &&
           !endpoint.startsWith('/drive') &&
           !endpoint.startsWith('/users') &&
           !endpoint.startsWith('/me')
         ) {
-          await this.createSession();
+          sessionId = await this.createSession(options.excelFile);
         }
 
         headers.Authorization = `Bearer ${newToken}`;
         if (
-          this.sessionId &&
+          sessionId &&
           !endpoint.startsWith('/drive') &&
           !endpoint.startsWith('/users') &&
           !endpoint.startsWith('/me')
         ) {
-          headers['workbook-session-id'] = this.sessionId;
+          headers['workbook-session-id'] = sessionId;
         }
 
         const retryResponse = await fetch(url, {
@@ -184,39 +217,41 @@ class GraphClient {
     }
   }
 
-  async closeSession() {
-    if (!this.sessionId) {
+  async closeSession(filePath) {
+    if (!filePath || !this.sessions.has(filePath)) {
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ message: 'No active session' }),
+            text: JSON.stringify({ message: 'No active session for the specified file' }),
           },
         ],
       };
     }
 
+    const sessionId = this.sessions.get(filePath);
+
     try {
       const accessToken = await this.authManager.getToken();
       const response = await fetch(
-        `https://graph.microsoft.com/v1.0/me/drive/root:${this.filePath}:/workbook/closeSession`,
+        `https://graph.microsoft.com/v1.0/me/drive/root:${filePath}:/workbook/closeSession`,
         {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
-            'workbook-session-id': this.sessionId,
+            'workbook-session-id': sessionId,
           },
         }
       );
 
       if (response.ok) {
-        this.sessionId = null;
+        this.sessions.delete(filePath);
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify({ message: 'Session closed successfully' }),
+              text: JSON.stringify({ message: `Session for ${filePath} closed successfully` }),
             },
           ],
         };
@@ -229,11 +264,29 @@ class GraphClient {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ error: 'Failed to close session' }),
+            text: JSON.stringify({ error: `Failed to close session for ${filePath}` }),
           },
         ],
       };
     }
+  }
+
+  async closeAllSessions() {
+    const results = [];
+
+    for (const [filePath, _] of this.sessions) {
+      const result = await this.closeSession(filePath);
+      results.push(result);
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({ message: 'All sessions closed', results }),
+        },
+      ],
+    };
   }
 }
 

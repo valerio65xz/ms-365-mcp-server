@@ -10,8 +10,7 @@ class MicrosoftGraphServer {
   constructor(authManager, options = {}) {
     this.authManager = authManager;
     this.options = options;
-    this.filePath = options.file || '/Livet.xlsx';
-    this.graphClient = new GraphClient(authManager, this.filePath);
+    this.graphClient = new GraphClient(authManager);
     this.server = null;
   }
 
@@ -24,10 +23,6 @@ class MicrosoftGraphServer {
     registerAuthTools(this.server, this.authManager);
     registerFilesTools(this.server, this.graphClient);
     registerExcelTools(this.server, this.graphClient);
-
-    if (!this.options.login && !this.options.testLogin) {
-      await this.graphClient.createSession();
-    }
   }
 
   async start() {

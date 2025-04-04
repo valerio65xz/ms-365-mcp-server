@@ -192,6 +192,9 @@ This server provides several MCP tools for interacting with Microsoft 365 servic
 
 #### Excel Tools
 
+All Excel tools require a `filePath` parameter to specify which Excel file to operate on. You can use the Files tools to
+find and manage your Excel files.
+
 - `update-excel`: Update cell values in an Excel worksheet
 - `create-chart`: Create a chart in an Excel worksheet
 - `format-range`: Apply formatting to a range of cells
@@ -199,6 +202,14 @@ This server provides several MCP tools for interacting with Microsoft 365 servic
 - `create-table`: Create a table from a range of cells
 - `get-range`: Get values from a range of cells
 - `list-worksheets`: List all worksheets in the workbook
-- `close-session`: Close the current Excel session
+- `close-session`: Close the session for a specific Excel file
+- `close-all-sessions`: Close all active Excel sessions
 - `delete-chart`: Delete a chart from a worksheet
 - `get-charts`: Get all charts in a worksheet
+
+Example workflow:
+
+1. Use `list-files` to find Excel files in your OneDrive
+2. Use `list-worksheets` with the file path to see available worksheets
+3. Use `get-range` to retrieve data from the Excel file
+4. Use other Excel tools to manipulate the file as needed

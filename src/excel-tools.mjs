@@ -4,16 +4,22 @@ export function registerExcelTools(server, graphClient) {
   server.tool(
     'update-excel',
     {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
       worksheet: z.string().default('Sheet1').describe('Worksheet name'),
       address: z.string().describe("Range address (e.g., 'A1:B5')"),
       values: z.array(z.array(z.any())).describe('Values to update'),
     },
-    async ({ worksheet, address, values }) => {
+    async ({ filePath, worksheet, address, values }) => {
       return graphClient.graphRequest(
         `/workbook/worksheets('${worksheet}')/range(address='${address}')`,
         {
           method: 'PATCH',
           body: JSON.stringify({ values }),
+          excelFile: filePath,
         }
       );
     }
@@ -22,6 +28,11 @@ export function registerExcelTools(server, graphClient) {
   server.tool(
     'create-chart',
     {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
       worksheet: z.string().default('Sheet1').describe('Worksheet name'),
       type: z.string().describe("Chart type (e.g., 'ColumnClustered', 'Line', 'Pie')"),
       dataRange: z.string().describe("Data range for the chart (e.g., 'A1:B10')"),
@@ -35,7 +46,7 @@ export function registerExcelTools(server, graphClient) {
         })
         .describe('Chart position and dimensions'),
     },
-    async ({ worksheet, type, dataRange, title, position }) => {
+    async ({ filePath, worksheet, type, dataRange, title, position }) => {
       const body = {
         type,
         sourceData: dataRange,
@@ -49,6 +60,7 @@ export function registerExcelTools(server, graphClient) {
       return graphClient.graphRequest(`/workbook/worksheets('${worksheet}')/charts/add`, {
         method: 'POST',
         body: JSON.stringify(body),
+        excelFile: filePath,
       });
     }
   );
@@ -56,6 +68,11 @@ export function registerExcelTools(server, graphClient) {
   server.tool(
     'format-range',
     {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
       worksheet: z.string().default('Sheet1').describe('Worksheet name'),
       range: z.string().describe("Range address (e.g., 'A1:B5')"),
       format: z
@@ -80,12 +97,13 @@ export function registerExcelTools(server, graphClient) {
         })
         .describe('Formatting to apply'),
     },
-    async ({ worksheet, range, format }) => {
+    async ({ filePath, worksheet, range, format }) => {
       return graphClient.graphRequest(
         `/workbook/worksheets('${worksheet}')/range(address='${range}')/format`,
         {
           method: 'PATCH',
           body: JSON.stringify(format),
+          excelFile: filePath,
         }
       );
     }
@@ -94,6 +112,11 @@ export function registerExcelTools(server, graphClient) {
   server.tool(
     'sort-range',
     {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
       worksheet: z.string().default('Sheet1').describe('Worksheet name'),
       range: z.string().describe("Range address (e.g., 'A1:B5')"),
       sortFields: z
@@ -134,7 +157,16 @@ export function registerExcelTools(server, graphClient) {
         .optional()
         .describe("Sort method for Chinese characters ('PinYin' or 'StrokeCount')"),
     },
-    async ({ worksheet, range, sortFields, matchCase, hasHeaders, orientation, method }) => {
+    async ({
+      filePath,
+      worksheet,
+      range,
+      sortFields,
+      matchCase,
+      hasHeaders,
+      orientation,
+      method,
+    }) => {
       const body = {
         fields: sortFields,
       };
@@ -149,6 +181,7 @@ export function registerExcelTools(server, graphClient) {
         {
           method: 'POST',
           body: JSON.stringify(body),
+          excelFile: filePath,
         }
       );
     }
@@ -157,12 +190,17 @@ export function registerExcelTools(server, graphClient) {
   server.tool(
     'create-table',
     {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
       worksheet: z.string().default('Sheet1').describe('Worksheet name'),
       range: z.string().describe("Range address (e.g., 'A1:B5')"),
       hasHeaders: z.boolean().optional().describe('Whether the range has headers'),
       tableName: z.string().optional().describe('Name for the new table'),
     },
-    async ({ worksheet, range, hasHeaders = true, tableName }) => {
+    async ({ filePath, worksheet, range, hasHeaders = true, tableName }) => {
       const body = {
         address: range,
         hasHeaders,
@@ -175,6 +213,7 @@ export function registerExcelTools(server, graphClient) {
       return graphClient.graphRequest(`/workbook/worksheets('${worksheet}')/tables/add`, {
         method: 'POST',
         body: JSON.stringify(body),
+        excelFile: filePath,
       });
     }
   );
@@ -182,40 +221,73 @@ export function registerExcelTools(server, graphClient) {
   server.tool(
     'get-range',
     {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
       worksheet: z.string().default('Sheet1').describe('Worksheet name'),
       range: z.string().describe("Range address (e.g., 'A1:B5')"),
     },
-    async ({ worksheet, range }) => {
+    async ({ filePath, worksheet, range }) => {
       return graphClient.graphRequest(
         `/workbook/worksheets('${worksheet}')/range(address='${range}')`,
         {
           method: 'GET',
+          excelFile: filePath,
         }
       );
     }
   );
 
-  server.tool('list-worksheets', {}, async () => {
-    return graphClient.graphRequest('/workbook/worksheets', {
-      method: 'GET',
-    });
-  });
+  server.tool(
+    'list-worksheets',
+    {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
+    },
+    async ({ filePath }) => {
+      return graphClient.graphRequest('/workbook/worksheets', {
+        method: 'GET',
+        excelFile: filePath,
+      });
+    }
+  );
 
-  server.tool('close-session', {}, async () => {
-    return graphClient.closeSession();
-  });
+  server.tool(
+    'close-session',
+    {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
+    },
+    async ({ filePath }) => {
+      return graphClient.closeSession(filePath);
+    }
+  );
 
   server.tool(
     'delete-chart',
     {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
       worksheet: z.string().default('Sheet1').describe('Worksheet name'),
       chartName: z.string().describe('The name of the chart to delete'),
     },
-    async ({ worksheet, chartName }) => {
+    async ({ filePath, worksheet, chartName }) => {
       return graphClient.graphRequest(
         `/workbook/worksheets('${worksheet}')/charts('${chartName}')`,
         {
           method: 'DELETE',
+          excelFile: filePath,
         }
       );
     }
@@ -224,12 +296,22 @@ export function registerExcelTools(server, graphClient) {
   server.tool(
     'get-charts',
     {
+      filePath: z
+        .string()
+        .describe(
+          'Path to the Excel file, including leading slash (e.g., "/Documents/budget.xlsx")'
+        ),
       worksheet: z.string().default('Sheet1').describe('Worksheet name'),
     },
-    async ({ worksheet }) => {
+    async ({ filePath, worksheet }) => {
       return graphClient.graphRequest(`/workbook/worksheets('${worksheet}')/charts`, {
         method: 'GET',
+        excelFile: filePath,
       });
     }
   );
+
+  server.tool('close-all-sessions', {}, async () => {
+    return graphClient.closeAllSessions();
+  });
 }
