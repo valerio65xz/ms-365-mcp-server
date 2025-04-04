@@ -240,3 +240,4 @@ Tools for working with Outlook calendars.
 Tools for working with Outlook email.
 
 - `list-messages`: List emails from any mail folder with powerful filtering, searching, and sorting options
+- `get-message`: Get detailed information about a specific email message with options to include attachments and other metadata

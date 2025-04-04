@@ -2,12 +2,86 @@ import { z } from 'zod';
 
 export function registerMailTools(server, graphClient) {
   server.tool(
+    'get-message',
+    {
+      messageId: z.string().describe('ID of the message to retrieve'),
+      select: z.array(z.string()).optional().describe('Properties to include in the response'),
+      expandAttachments: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Whether to include attachment details'),
+      expandMentions: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Whether to include @mention details'),
+      expandSingleValueExtendedProperties: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Whether to include single value extended properties'),
+      expandMultiValueExtendedProperties: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Whether to include multi-value extended properties'),
+    },
+    async ({
+      messageId,
+      select,
+      expandAttachments,
+      expandMentions,
+      expandSingleValueExtendedProperties,
+      expandMultiValueExtendedProperties,
+    }) => {
+      let endpoint = `/me/messages/${messageId}`;
+
+      const queryParams = [];
+
+      if (select && select.length > 0) {
+        queryParams.push(`$select=${select.join(',')}`);
+      }
+
+      const expandParams = [];
+
+      if (expandAttachments) {
+        expandParams.push('attachments');
+      }
+
+      if (expandMentions) {
+        expandParams.push('mentions');
+      }
+
+      if (expandSingleValueExtendedProperties) {
+        expandParams.push('singleValueExtendedProperties');
+      }
+
+      if (expandMultiValueExtendedProperties) {
+        expandParams.push('multiValueExtendedProperties');
+      }
+
+      if (expandParams.length > 0) {
+        queryParams.push(`$expand=${expandParams.join(',')}`);
+      }
+
+      if (queryParams.length > 0) {
+        endpoint += '?' + queryParams.join('&');
+      }
+
+      return graphClient.graphRequest(endpoint, {
+        method: 'GET',
+      });
+    }
+  );
+
+  server.tool(
     'list-messages',
     {
       folderName: z
         .string()
         .optional()
-        .describe('Name of the folder to get messages from (e.g., "inbox", "drafts", "sentitems")'),
+        .describe('Name of the folder to get messages from (e.g., "inbox", "drafts", "sentItems")'),
       folderId: z
         .string()
         .optional()
@@ -66,7 +140,7 @@ export function registerMailTools(server, graphClient) {
       }
 
       if (orderBy) {
-        queryParams.push(`$orderby=${encodeURIComponent(orderBy)}`);
+        queryParams.push(`$orderBy=${encodeURIComponent(orderBy)}`);
       }
 
       if (search) {
