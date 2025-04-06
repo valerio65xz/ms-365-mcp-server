@@ -7,6 +7,12 @@ A Model Context Protocol (MCP) server for interacting with Microsoft 365 service
 [![Build Status](https://github.com/softeria-eu/ms-365-mcp-server/actions/workflows/build.yml/badge.svg)](https://github.com/softeria-eu/ms-365-mcp-server/actions/workflows/build.yml)
 [![npm version](https://img.shields.io/npm/v/@softeria/ms-365-mcp-server.svg)](https://www.npmjs.com/package/@softeria/ms-365-mcp-server)
 
+## Quick Start Example
+
+Login and test authentication in Claude Desktop:
+
+![MS 365 MCP Server login example in Claude Desktop](https://github.com/user-attachments/assets/936d16bc-b3e1-437b-b3f1-03c54874a816)
+
 ## Features
 
 - Authentication using Microsoft Authentication Library (MSAL)
@@ -28,14 +34,6 @@ npx @softeria/ms-365-mcp-server
 
 ## Integration with Claude
 
-### Claude Code CLI
-
-To add this MCP server to Claude Code CLI:
-
-```bash
-claude mcp add ms -- npx @softeria/ms-365-mcp-server
-```
-
 ### Claude Desktop
 
 To add this MCP server to Claude Desktop:
@@ -48,16 +46,31 @@ To add this MCP server to Claude Desktop:
     - Command: `npx @softeria/ms-365-mcp-server`
     - Click "Add"
 
-### Direct Configuration
-
-You can also use this configuration JSON in compatible Claude interfaces:
+Alternatively, you can edit Claude Desktop's configuration file directly. The location varies by platform, but you can
+find it by going to Settings > Developer > Edit Config. Add this to your configuration file:
 
 ```json
 {
-  "name": "ms",
-  "command": "npx @softeria/ms-365-mcp-server"
+  "mcpServers": {
+    "ms": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@softeria/ms-365-mcp-server"
+      ]
+    }
+  }
 }
 ```
+
+### Using Claude Code CLI
+
+Claude Code CLI integration is available but configuration methods may vary based on the current version. Please refer
+to the [official Claude Code documentation](https://github.com/anthropics/claude-code) for the most up-to-date
+instructions on adding MCP servers.
+
+For other Claude interfaces that support MCPs, please refer to their respective documentation for the correct
+integration method.
 
 ## Development
 
@@ -240,4 +253,5 @@ Tools for working with Outlook calendars.
 Tools for working with Outlook email.
 
 - `list-messages`: List emails from any mail folder with powerful filtering, searching, and sorting options
-- `get-message`: Get detailed information about a specific email message with options to include attachments and other metadata
+- `get-message`: Get detailed information about a specific email message with options to include attachments and other
+  metadata
