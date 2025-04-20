@@ -17,8 +17,7 @@ program
   .option('-v', 'Enable verbose logging')
   .option('--login', 'Login using device code flow')
   .option('--logout', 'Log out and clear saved credentials')
-  .option('--test-login', 'Test login without starting the server')
-  .option('--file <path>', 'Specify Excel file path');
+  .option('--verify-login', 'Verify login without starting the server');
 
 export function parseArgs() {
   program.parse();
