@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import logger from './logger.mjs';
+import { TARGET_ENDPOINTS } from './dynamic-tools.mjs';
 
 const SERVICE_NAME = 'ms-365-mcp-server';
 const TOKEN_CACHE_ACCOUNT = 'msal-token-cache';
@@ -17,17 +18,36 @@ const DEFAULT_CONFIG = {
   },
 };
 
-const DEFAULT_SCOPES = [
-  'Files.ReadWrite',
-  'User.Read',
-  'Calendars.Read',
-  'Calendars.ReadWrite',
-  'Mail.Read',
-  'Mail.ReadWrite',
-];
+const SCOPE_HIERARCHY = {
+  'Mail.ReadWrite': ['Mail.Read', 'Mail.Send'],
+  'Calendars.ReadWrite': ['Calendars.Read'],
+  'Files.ReadWrite': ['Files.Read'],
+  'Tasks.ReadWrite': ['Tasks.Read'],
+  'Contacts.ReadWrite': ['Contacts.Read'],
+};
+
+function buildScopesFromEndpoints() {
+  const scopesSet = new Set();
+
+  TARGET_ENDPOINTS.forEach((endpoint) => {
+    if (endpoint.scopes && Array.isArray(endpoint.scopes)) {
+      endpoint.scopes.forEach((scope) => scopesSet.add(scope));
+    }
+  });
+
+  Object.entries(SCOPE_HIERARCHY).forEach(([higherScope, lowerScopes]) => {
+    if (lowerScopes.every((scope) => scopesSet.has(scope))) {
+      lowerScopes.forEach((scope) => scopesSet.delete(scope));
+      scopesSet.add(higherScope);
+    }
+  });
+
+  return Array.from(scopesSet);
+}
 
 class AuthManager {
-  constructor(config = DEFAULT_CONFIG, scopes = DEFAULT_SCOPES) {
+  constructor(config = DEFAULT_CONFIG, scopes = buildScopesFromEndpoints()) {
+    logger.info(`And scopes are ${scopes.join(', ')}`, scopes);
     this.config = config;
     this.scopes = scopes;
     this.msalApp = new PublicClientApplication(this.config);

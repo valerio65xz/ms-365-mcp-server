@@ -17,6 +17,13 @@ A Model Context Protocol (MCP) server for interacting with Microsoft 365 service
 - Calendar event management
 - Mail operations
 - OneDrive file management
+- Microsoft Teams integration
+- OneNote notebooks and pages
+- To Do tasks and task lists
+- Planner plans and tasks
+- SharePoint sites and lists
+- Outlook contacts
+- User and group management
 - Dynamic tools powered by Microsoft Graph OpenAPI spec
 - Built on the Model Context Protocol
 
