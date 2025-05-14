@@ -1,12 +1,41 @@
-import logger from './logger.mjs';
+import logger from './logger.js';
+import AuthManager from './auth.js';
+
+interface GraphRequestOptions {
+  excelFile?: string;
+  headers?: Record<string, string>;
+  method?: string;
+  body?: string;
+  rawResponse?: boolean;
+
+  [key: string]: any;
+}
+
+interface ContentItem {
+  type: 'text';
+  text: string;
+
+  [key: string]: unknown;
+}
+
+interface McpResponse {
+  content: ContentItem[];
+  _meta?: Record<string, unknown>;
+  isError?: boolean;
+
+  [key: string]: unknown;
+}
 
 class GraphClient {
-  constructor(authManager) {
+  private authManager: AuthManager;
+  private sessions: Map<string, string>;
+
+  constructor(authManager: AuthManager) {
     this.authManager = authManager;
     this.sessions = new Map();
   }
 
-  async createSession(filePath) {
+  async createSession(filePath: string): Promise<string | null> {
     try {
       if (!filePath) {
         logger.error('No file path provided for Excel session');
@@ -14,7 +43,7 @@ class GraphClient {
       }
 
       if (this.sessions.has(filePath)) {
-        return this.sessions.get(filePath);
+        return this.sessions.get(filePath) || null;
       }
 
       logger.info(`Creating new Excel session for file: ${filePath}`);
@@ -49,12 +78,13 @@ class GraphClient {
     }
   }
 
-  async graphRequest(endpoint, options = {}) {
+  async graphRequest(endpoint: string, options: GraphRequestOptions = {}): Promise<McpResponse> {
     try {
+      logger.info(`Calling ${endpoint} with options: ${JSON.stringify(options)}`);
       let accessToken = await this.authManager.getToken();
 
-      let url;
-      let sessionId = null;
+      let url: string;
+      let sessionId: string | null = null;
 
       if (
         options.excelFile &&
@@ -62,7 +92,7 @@ class GraphClient {
         !endpoint.startsWith('/users') &&
         !endpoint.startsWith('/me')
       ) {
-        sessionId = this.sessions.get(options.excelFile);
+        sessionId = this.sessions.get(options.excelFile) || null;
 
         if (!sessionId) {
           sessionId = await this.createSession(options.excelFile);
@@ -87,12 +117,15 @@ class GraphClient {
         };
       }
 
-      const headers = {
+      const headers: Record<string, string> = {
+        ...options.headers,
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         ...(sessionId && { 'workbook-session-id': sessionId }),
-        ...options.headers,
       };
+      delete options.headers;
+
+      logger.info(` ** Making request to ${url} with options: ${JSON.stringify(options)}`);
 
       const response = await fetch(url, {
         headers,
@@ -142,12 +175,13 @@ class GraphClient {
     } catch (error) {
       logger.error(`Error in Graph API request: ${error}`);
       return {
-        content: [{ type: 'text', text: JSON.stringify({ error: error.message }) }],
+        content: [{ type: 'text', text: JSON.stringify({ error: (error as Error).message }) }],
+        isError: true,
       };
     }
   }
 
-  async formatResponse(response, rawResponse = false) {
+  async formatResponse(response: Response, rawResponse = false): Promise<McpResponse> {
     try {
       if (response.status === 204) {
         return {
@@ -188,7 +222,7 @@ class GraphClient {
 
       const result = await response.json();
 
-      const removeODataProps = (obj) => {
+      const removeODataProps = (obj: any): void => {
         if (!obj || typeof obj !== 'object') return;
 
         if (Array.isArray(obj)) {
@@ -217,7 +251,7 @@ class GraphClient {
     }
   }
 
-  async closeSession(filePath) {
+  async closeSession(filePath: string): Promise<McpResponse> {
     if (!filePath || !this.sessions.has(filePath)) {
       return {
         content: [
@@ -240,7 +274,7 @@ class GraphClient {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
-            'workbook-session-id': sessionId,
+            'workbook-session-id': sessionId!,
           },
         }
       );
@@ -267,14 +301,15 @@ class GraphClient {
             text: JSON.stringify({ error: `Failed to close session for ${filePath}` }),
           },
         ],
+        isError: true,
       };
     }
   }
 
-  async closeAllSessions() {
-    const results = [];
+  async closeAllSessions(): Promise<McpResponse> {
+    const results: McpResponse[] = [];
 
-    for (const [filePath, _] of this.sessions) {
+    for (const [filePath] of this.sessions) {
       const result = await this.closeSession(filePath);
       results.push(result);
     }

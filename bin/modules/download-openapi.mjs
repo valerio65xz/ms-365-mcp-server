@@ -1,22 +1,13 @@
-#!/usr/bin/env node
-
 import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-const args = process.argv.slice(2);
-const forceDownload = args.includes('--force');
+const DEFAULT_OPENAPI_URL = 'https://raw.githubusercontent.com/microsoftgraph/msgraph-metadata/refs/heads/master/openapi/v1.0/openapi.yaml';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const targetDir = path.resolve(__dirname, '..', 'openapi');
-const targetFile = path.join(targetDir, 'openapi.yaml');
-
-const openapiUrl =
-  'https://raw.githubusercontent.com/microsoftgraph/msgraph-metadata/refs/heads/master/openapi/v1.0/openapi.yaml';
-
-async function downloadOpenApi() {
+export async function downloadGraphOpenAPI(
+  targetDir,
+  targetFile,
+  openapiUrl = DEFAULT_OPENAPI_URL,
+  forceDownload = false
+) {
   if (!fs.existsSync(targetDir)) {
     console.log(`Creating directory: ${targetDir}`);
     fs.mkdirSync(targetDir, { recursive: true });
@@ -25,7 +16,7 @@ async function downloadOpenApi() {
   if (fs.existsSync(targetFile) && !forceDownload) {
     console.log(`OpenAPI specification already exists at ${targetFile}`);
     console.log('Use --force to download again');
-    return;
+    return false;
   }
 
   console.log(`Downloading OpenAPI specification from ${openapiUrl}`);
@@ -40,10 +31,9 @@ async function downloadOpenApi() {
     const content = await response.text();
     fs.writeFileSync(targetFile, content);
     console.log(`OpenAPI specification downloaded to ${targetFile}`);
+    return true;
   } catch (error) {
     console.error('Error downloading OpenAPI specification:', error.message);
-    process.exit(1);
+    throw error;
   }
 }
-
-downloadOpenApi();
