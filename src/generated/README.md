@@ -12,7 +12,7 @@ This directory contains the generated TypeScript client for the Microsoft 365 AP
 ### Version 1: AI-Generated Mappings
 
 Our initial approach used AI to map Microsoft 365 documentation and OpenAPI specifications directly into MCP tools with
-Zod mappings. While conceptually appealing, this approach didn't work well in practice and created several problems
+Zod mappings. While conceptually appealing, this approach didn't work well in practice and created several problems.
 
 ### Version 2: Direct OpenAPI Spec Usage
 
