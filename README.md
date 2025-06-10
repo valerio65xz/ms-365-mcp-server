@@ -26,11 +26,11 @@ A Model Context Protocol (MCP) server for interacting with Microsoft 365 service
 
 Test login in Claude Desktop:
 
-![Login example](https://github.com/user-attachments/assets/e457884f-c98a-4186-9e6f-eb323ec24e0a)
+![Login example](https://github.com/user-attachments/assets/27f57f0e-57b8-4366-a8d1-c0bdab79900c)
 
 ## Examples
 
-![Image](https://github.com/user-attachments/assets/1a296afb-48ed-42b0-9e7c-e685d5d1784c)
+![Image](https://github.com/user-attachments/assets/ed275100-72e8-4924-bcf2-cd8e1b4c6f3a)
 
 ## Integration
 
