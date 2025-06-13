@@ -47,7 +47,7 @@ Edit the config file under Settings > Developer:
       "command": "npx",
       "args": [
         "-y",
-        "@softeria/ms-365-mcp-server"
+        "@valerio65xz/ms-365-mcp-server"
       ]
     }
   }
