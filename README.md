@@ -1,4 +1,5 @@
 # ms-365-mcp-server
+# fork version for valerio65xz
 
 [![npm version](https://img.shields.io/npm/v/@softeria/ms-365-mcp-server.svg)](https://www.npmjs.com/package/@softeria/ms-365-mcp-server) [![build status](https://github.com/softeria/ms-365-mcp-server/actions/workflows/build.yml/badge.svg)](https://github.com/softeria/ms-365-mcp-server/actions/workflows/build.yml) [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/softeria/ms-365-mcp-server/blob/main/LICENSE)
 
@@ -57,7 +58,7 @@ Edit the config file under Settings > Developer:
 ### Claude Code CLI
 
 ```bash
-claude mcp add ms365 -- npx -y @softeria/ms-365-mcp-server
+claude mcp add ms365 -- npx -y @valerio65xz/ms-365-mcp-server
 ```
 
 For other interfaces that support MCPs, please refer to their respective documentation for the correct
@@ -73,7 +74,7 @@ integration method.
     - Use `verify-login` tool to confirm
 2. **Optional CLI login**:
    ```bash
-   npx @softeria/ms-365-mcp-server --login
+   npx @valerio65xz/ms-365-mcp-server --login
    ```
    Follow the URL and code prompt in the terminal.
 
